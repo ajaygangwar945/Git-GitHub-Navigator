@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Navigator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #1a1d24;
+    --border: #2a2d35;
+    --git-orange: #f05033;
+    --git-orange-dim: #c03020;
+    --gh-purple: #7c3aed;
+    --gh-blue: #58a6ff;
+    --gh-green: #3fb950;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #f05033;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom Cursor */
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--git-orange);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--git-orange);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease-out, width 0.2s, height 0.2s;
+    opacity: 0.6;
+  }
+  body:hover .cursor { opacity: 1; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--git-orange); border-radius: 2px; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(10,12,16,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--git-orange);
+    letter-spacing: -0.02em;
+  }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--git-orange); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 6rem 2rem 4rem;
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(240,80,51,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,80,51,0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+    animation: gridShift 20s linear infinite;
+  }
+  @keyframes gridShift {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(48px); }
+  }
+  .hero-glow {
+    position: absolute;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(240,80,51,0.15) 0%, transparent 65%);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -55%);
+    animation: breathe 6s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%,100% { transform: translate(-50%,-55%) scale(1); }
+    50% { transform: translate(-50%,-55%) scale(1.12); }
+  }
+  .hero-content { position: relative; text-align: center; max-width: 900px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(240,80,51,0.1);
+    border: 1px solid rgba(240,80,51,0.3);
+    border-radius: 100px;
+    padding: 0.35rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--git-orange);
+    margin-bottom: 2rem;
+    letter-spacing: 0.05em;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-badge .dot { width: 6px; height: 6px; background: var(--gh-green); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .hero-title {
+    font-size: clamp(3rem, 8vw, 6.5rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .hero-title .git-word { color: var(--git-orange); }
+  .hero-title .amp { color: var(--border); margin: 0 0.2em; }
+  .hero-title .gh-word {
+    background: linear-gradient(135deg, var(--gh-blue), var(--gh-purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-top: 1.5rem;
+    max-width: 520px;
+    margin-left: auto; margin-right: auto;
+    line-height: 1.8;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+  .hero-cta {
+    display: flex; gap: 1rem; justify-content: center; margin-top: 2.5rem;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+  .btn {
+    padding: 0.75rem 1.8rem;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-primary { background: var(--git-orange); color: #fff; }
+  .btn-primary:hover { background: #ff6a4d; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(240,80,51,0.35); }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--git-orange); color: var(--git-orange); transform: translateY(-2px); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Terminal hero */
+  .terminal-hero {
+    margin-top: 4rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%; max-width: 640px;
+    margin-left: auto; margin-right: auto;
+    overflow: hidden;
+    animation: fadeUp 0.6s 0.4s ease both;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+  }
+  .terminal-header {
+    background: var(--surface2);
+    padding: 0.75rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .t-red { background: #ff5f57; }
+  .t-yellow { background: #febc2e; }
+  .t-green { background: #28c840; }
+  .t-title { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+  .terminal-body { padding: 1.5rem; font-family: var(--mono); font-size: 0.82rem; line-height: 2; }
+  .t-line { display: flex; gap: 0.6rem; }
+  .t-prompt { color: var(--gh-green); }
+  .t-cmd { color: var(--text); }
+  .t-out { color: var(--text-muted); padding-left: 1rem; }
+  .t-branch { color: var(--gh-purple); }
+  .t-hash { color: var(--gh-blue); }
+  .t-cursor { display: inline-block; width: 8px; height: 14px; background: var(--git-orange); animation: blink 1s infinite; vertical-align: middle; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 2rem; max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--git-orange);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .section-label::before { content: ''; flex: 0 0 24px; height: 1px; background: var(--git-orange); }
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+  }
+  .section-desc {
+    font-family: var(--mono);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.9;
+    max-width: 580px;
+  }
+
+  /* ── WHY CARDS ── */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .why-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .why-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(240,80,51,0.04), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .why-card:hover { border-color: rgba(240,80,51,0.4); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
+  .why-card:hover::before { opacity: 1; }
+  .why-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 1.2rem;
+  }
+  .why-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .why-card p { font-family: var(--mono); font-size: 0.8rem; color: var(--text-muted); line-height: 1.8; }
+
+  /* ── DIFF SECTION ── */
+  .diff-wrap {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem;
+  }
+  @media (max-width: 700px) { .diff-wrap { grid-template-columns: 1fr; } }
+  .diff-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .diff-card.git-card { border-top: 3px solid var(--git-orange); }
+  .diff-card.gh-card { border-top: 3px solid var(--gh-blue); }
+  .diff-logo {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+  }
+  .diff-logo.git { color: var(--git-orange); }
+  .diff-logo.gh { background: linear-gradient(135deg,var(--gh-blue),var(--gh-purple)); -webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+  .diff-card h3 { font-size: 1rem; font-weight: 700; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 0.05em; text-transform: uppercase; font-family: var(--mono); }
+  .diff-list { list-style: none; }
+  .diff-list li {
+    padding: 0.5rem 0;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+  }
+  .diff-list li:last-child { border-bottom: none; }
+  .diff-list li::before { content: '→'; color: var(--git-orange); flex-shrink: 0; }
+  .gh-card .diff-list li::before { color: var(--gh-blue); }
+
+  /* ── COMMANDS ── */
+  .cmd-tabs {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 3rem; margin-bottom: 2rem;
+  }
+  .cmd-tab {
+    padding: 0.5rem 1.2rem;
+    border-radius: 100px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cmd-tab.active, .cmd-tab:hover {
+    background: var(--git-orange);
+    border-color: var(--git-orange);
+    color: #fff;
+  }
+  .cmd-panel { display: none; }
+  .cmd-panel.active { display: block; }
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+  .cmd-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .cmd-card:hover { border-color: rgba(240,80,51,0.4); transform: translateY(-2px); }
+  .cmd-top {
+    padding: 1rem 1.2rem 0.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cmd-code {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--gh-green);
+    background: rgba(63,185,80,0.08);
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    user-select: all;
+  }
+  .cmd-code:hover { background: rgba(63,185,80,0.2); }
+  .copy-btn {
+    background: none; border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+    transition: color 0.2s;
+    padding: 0.2rem 0.5rem;
+  }
+  .copy-btn:hover, .copy-btn.copied { color: var(--gh-green); }
+  .cmd-desc {
+    padding: 0.5rem 1.2rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .cmd-tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tag-basic { background: rgba(88,166,255,0.12); color: var(--gh-blue); }
+  .tag-branch { background: rgba(124,58,237,0.12); color: #a78bfa; }
+  .tag-remote { background: rgba(240,80,51,0.12); color: var(--git-orange); }
+  .tag-advanced { background: rgba(63,185,80,0.12); color: var(--gh-green); }
+
+  /* ── WORKFLOW ── */
+  .workflow {
+    margin-top: 3rem;
+    position: relative;
+  }
+  .workflow-steps {
+    display: flex; flex-direction: column; gap: 0;
+    position: relative;
+  }
+  .workflow-steps::before {
+    content: '';
+    position: absolute;
+    left: 20px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--git-orange), var(--gh-purple), var(--gh-blue));
+  }
+  .wf-step {
+    display: flex; gap: 2rem; align-items: flex-start;
+    padding: 1.5rem 0 1.5rem 0;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.5s;
+  }
+  .wf-step.visible { opacity: 1; transform: translateX(0); }
+  .wf-num {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+  .wf-body { padding-top: 0.5rem; }
+  .wf-body h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .wf-body p { font-family: var(--mono); font-size: 0.8rem; color: var(--text-muted); line-height: 1.7; }
+  .wf-body code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: var(--gh-green);
+  }
+
+  /* ── CHEATSHEET ── */
+  .cheatsheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .cs-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .cs-head {
+    padding: 0.75rem 1.25rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--git-orange);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .cs-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid rgba(42,45,53,0.5);
+    transition: background 0.15s;
+  }
+  .cs-row:last-child { border-bottom: none; }
+  .cs-row:hover { background: rgba(240,80,51,0.04); }
+  .cs-row code { font-family: var(--mono); font-size: 0.75rem; color: var(--gh-green); }
+  .cs-row span { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); max-width: 50%; text-align: right; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  footer a { color: var(--git-orange); text-decoration: none; }
+  .footer-logo { font-size: 1.5rem; font-weight: 800; color: var(--git-orange); margin-bottom: 1rem; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    max-width: 1200px; margin: 0 auto;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--gh-green);
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--gh-green);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Responsive nav */
+  @media (max-width: 600px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="toast" id="toast">✓ Copied to clipboard!</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">$ git —help</div>
+  <ul class="nav-links">
+    <li><a href="#why">Why Git</a></li>
+    <li><a href="#diff">Git vs GitHub</a></li>
+    <li><a href="#commands">Commands</a></li>
+    <li><a href="#workflow">Workflow</a></li>
+    <li><a href="#cheatsheet">Cheatsheet</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      version control · collaboration · open source
+    </div>
+    <h1 class="hero-title">
+      <span class="git-word">Git</span>
+      <span class="amp">&</span>
+      <span class="gh-word">GitHub</span><br>
+      Demystified
+    </h1>
+    <p class="hero-sub">
+      From solo dev to global teams — master the tools that power<br>
+      over 420 million repositories worldwide.
+    </p>
+    <div class="hero-cta">
+      <a href="#commands" class="btn btn-primary">⚡ Explore Commands</a>
+      <a href="#why" class="btn btn-ghost">Learn Why →</a>
+    </div>
+    <div class="terminal-hero">
+      <div class="terminal-header">
+        <span class="t-dot t-red"></span>
+        <span class="t-dot t-yellow"></span>
+        <span class="t-dot t-green"></span>
+        <span class="t-title">bash — ~/my-project</span>
+      </div>
+      <div class="terminal-body" id="terminalBody">
+        <div class="t-line"><span class="t-prompt">ajay@dev</span><span style="color:var(--text-muted)">:</span><span class="t-branch">~/project (main)</span><span class="t-prompt"> $</span>&nbsp;<span class="t-cmd" id="termCmd"></span><span class="t-cursor" id="termCursor"></span></div>
+        <div id="termOutput"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY GIT -->
+<div class="divider"></div>
+<section id="why">
+  <div class="section-label">Section 01</div>
+  <h2 class="section-title">Why Version Control<br>Matters</h2>
+  <p class="section-desc">Git is the world's most popular distributed version control system. It tracks changes, enables collaboration, and lets you travel back in time through your code's history.</p>
+  <div class="why-grid">
+    <div class="why-card">
+      <div class="why-icon" style="background:rgba(240,80,51,0.1);">🕰️</div>
+      <h3>Time Travel</h3>
+      <p>Revert any file — or your entire project — to a previous state. Made a catastrophic mistake? Roll back instantly.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-icon" style="background:rgba(88,166,255,0.1);">🌿</div>
+      <h3>Parallel Branches</h3>
+      <p>Work on multiple features simultaneously. Branches isolate changes so experiments never break your main codebase.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-icon" style="background:rgba(63,185,80,0.1);">👥</div>
+      <h3>Team Collaboration</h3>
+      <p>Multiple developers can work on the same project without overwriting each other's work. Merge intelligently.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-icon" style="background:rgba(124,58,237,0.1);">📝</div>
+      <h3>Full Audit Trail</h3>
+      <p>Every change is logged with who made it, when, and why. Code review, accountability, and blame — all built in.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-icon" style="background:rgba(254,188,46,0.1);">⚡</div>
+      <h3>Blazing Fast</h3>
+      <p>Git is local-first. Most operations happen offline at lightning speed. Only push/pull when you need the network.</p>
+    </div>
+    <div class="why-card">
+      <div class="why-icon" style="background:rgba(240,80,51,0.1);">🔒</div>
+      <h3>Data Integrity</h3>
+      <p>Every file, commit, and tree is checksummed with SHA-1. Corruption or tampering is instantly detectable.</p>
+    </div>
+  </div>
+</section>
+
+<!-- GIT vs GITHUB -->
+<div class="divider"></div>
+<section id="diff">
+  <div class="section-label">Section 02</div>
+  <h2 class="section-title">Git vs GitHub<br><span style="color:var(--text-muted);font-weight:400;font-size:0.6em;">They're not the same thing</span></h2>
+  <p class="section-desc">A common confusion — Git is the tool, GitHub is the platform. Here's the real difference:</p>
+  <div class="diff-wrap">
+    <div class="diff-card git-card">
+      <div class="diff-logo git">Git</div>
+      <h3>The Version Control System</h3>
+      <ul class="diff-list">
+        <li>Installed locally on your machine</li>
+        <li>Tracks changes in your files</li>
+        <li>Created by Linus Torvalds in 2005</li>
+        <li>Works completely offline</li>
+        <li>Command-line tool at its core</li>
+        <li>Free and open-source (GPL v2)</li>
+        <li>No account or sign-up required</li>
+      </ul>
+    </div>
+    <div class="diff-card gh-card">
+      <div class="diff-logo gh">GitHub</div>
+      <h3>The Cloud Platform</h3>
+      <ul class="diff-list">
+        <li>Web-based hosting for Git repos</li>
+        <li>Adds PRs, Issues, Actions & more</li>
+        <li>Acquired by Microsoft in 2018</li>
+        <li>Requires internet connection</li>
+        <li>GUI + API + CLI available</li>
+        <li>Free tier + paid plans (Copilot, Teams)</li>
+        <li>100M+ developers worldwide</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- COMMANDS -->
+<div class="divider"></div>
+<section id="commands">
+  <div class="section-label">Section 03</div>
+  <h2 class="section-title">Essential Commands</h2>
+  <p class="section-desc">Click any command to copy it. Master these and you'll handle 95% of real-world Git workflows.</p>
+
+  <div class="cmd-tabs">
+    <button class="cmd-tab active" onclick="showTab('basics')">🚀 Basics</button>
+    <button class="cmd-tab" onclick="showTab('branching')">🌿 Branching</button>
+    <button class="cmd-tab" onclick="showTab('remote')">☁️ Remote</button>
+    <button class="cmd-tab" onclick="showTab('advanced')">⚡ Advanced</button>
+    <button class="cmd-tab" onclick="showTab('github')">🐙 GitHub CLI</button>
+  </div>
+
+  <div class="cmd-panel active" id="panel-basics">
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git init</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Initialize a new Git repository in the current directory. Creates a hidden .git folder to start tracking.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git clone &lt;url&gt;</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Clone (download) an existing repository from a URL to your local machine with full history.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git status</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Show the state of your working directory and staging area. See tracked, untracked, and modified files.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git add .</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Stage ALL modified and new files in the current directory for the next commit.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git add &lt;file&gt;</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Stage a specific file for commit. Use this for selective staging of only certain changes.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git commit -m "msg"</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Commit staged changes with a descriptive message. Each commit is a permanent snapshot in history.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git log --oneline</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Display a compact commit history. One commit per line with hash and message — easy to scan.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git diff</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Show line-by-line differences between your working directory and the last commit. See exactly what changed.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git rm &lt;file&gt;</code><span class="cmd-tag tag-basic">BASIC</span></div><div class="cmd-desc">Remove a file from both the working directory and from Git tracking. Stage the deletion for commit.</div></div>
+    </div>
+  </div>
+
+  <div class="cmd-panel" id="panel-branching">
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git branch</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">List all local branches. The current branch is highlighted with an asterisk (*) symbol.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git branch &lt;name&gt;</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Create a new branch with the given name. Does NOT switch to it — it stays on the current branch.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git checkout -b &lt;name&gt;</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Create AND switch to a new branch in one command. The go-to shortcut for starting new features.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git switch &lt;branch&gt;</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Switch to an existing branch. The newer, cleaner alternative to git checkout for branch switching.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git merge &lt;branch&gt;</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Merge the specified branch into your current branch. Combines commit histories and creates a merge commit.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git branch -d &lt;name&gt;</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Delete a branch (only if it's been fully merged). Use -D to force-delete even if unmerged.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git stash</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Temporarily shelve your current uncommitted changes so you can switch branches without losing work.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git stash pop</code><span class="cmd-tag tag-branch">BRANCH</span></div><div class="cmd-desc">Restore the most recently stashed changes back to your working directory and remove from stash list.</div></div>
+    </div>
+  </div>
+
+  <div class="cmd-panel" id="panel-remote">
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git remote add origin &lt;url&gt;</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">Connect your local repo to a remote repository (usually on GitHub). "origin" is the conventional name.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git push origin main</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">Upload your local main branch commits to the remote repository on GitHub.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git pull</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">Fetch changes from the remote and immediately merge them into your current branch. = fetch + merge.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git fetch</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">Download remote changes WITHOUT merging them. Lets you inspect before integrating.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git remote -v</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">List all configured remote connections with their URLs (fetch and push). Verify your remote setup.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git push -u origin &lt;branch&gt;</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">Push a branch and set upstream tracking. After this, just git push works for this branch.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git push --force-with-lease</code><span class="cmd-tag tag-remote">REMOTE</span></div><div class="cmd-desc">Safer force push. Rejects if others pushed since your last fetch — prevents overwriting team's work.</div></div>
+    </div>
+  </div>
+
+  <div class="cmd-panel" id="panel-advanced">
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git rebase main</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Reapply your commits on top of main. Creates a cleaner linear history compared to merging.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git rebase -i HEAD~3</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Interactive rebase: squash, reorder, or edit the last 3 commits before pushing. Powerful history rewriting.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git cherry-pick &lt;hash&gt;</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Apply a specific commit from another branch onto your current branch. Pick only what you need.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git reset --soft HEAD~1</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Undo the last commit but keep all changes staged. Perfect for fixing a premature commit.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git reset --hard HEAD~1</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Undo the last commit AND discard all changes. ⚠️ Destructive — data is gone. Use with caution.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git bisect start</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Start binary search through commit history to find which commit introduced a bug. Incredibly powerful.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git tag v1.0.0</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Create a lightweight tag at the current commit. Use annotated tags (-a) for releases with metadata.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">git reflog</code><span class="cmd-tag tag-advanced">ADVANCED</span></div><div class="cmd-desc">Show a log of all reference changes. A lifesaver for recovering "lost" commits after hard resets.</div></div>
+    </div>
+  </div>
+
+  <div class="cmd-panel" id="panel-github">
+    <div class="cmd-grid">
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">gh repo create</code><span class="cmd-tag tag-remote">GH CLI</span></div><div class="cmd-desc">Create a new GitHub repository from the terminal. Interactive prompts for name, visibility, and more.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">gh pr create</code><span class="cmd-tag tag-remote">GH CLI</span></div><div class="cmd-desc">Open a Pull Request on GitHub directly from your terminal. Add title, body, reviewers, and labels.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">gh pr list</code><span class="cmd-tag tag-remote">GH CLI</span></div><div class="cmd-desc">List all open Pull Requests in the current repository. Filter by author, label, or assignee.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">gh issue create</code><span class="cmd-tag tag-remote">GH CLI</span></div><div class="cmd-desc">Create a new GitHub Issue with a title, body, and labels — without leaving the terminal.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">gh repo clone &lt;user/repo&gt;</code><span class="cmd-tag tag-remote">GH CLI</span></div><div class="cmd-desc">Clone a GitHub repo using its shorthand "username/repo" format. Automatically sets up remote tracking.</div></div>
+      <div class="cmd-card"><div class="cmd-top"><code class="cmd-code" onclick="copyCmd(this)">gh auth login</code><span class="cmd-tag tag-remote">GH CLI</span></div><div class="cmd-desc">Authenticate the GitHub CLI with your account. Supports browser-based OAuth or token-based login.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<div class="divider"></div>
+<section id="workflow">
+  <div class="section-label">Section 04</div>
+  <h2 class="section-title">The Git Workflow<br><span style="color:var(--text-muted);font-weight:400;font-size:0.6em;">Feature Branch Flow</span></h2>
+  <p class="section-desc">The industry-standard workflow used by millions of teams. Follow these steps for every feature or bug fix.</p>
+  <div class="workflow">
+    <div class="workflow-steps" id="workflowSteps">
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(240,80,51,0.15);color:var(--git-orange);border:2px solid var(--git-orange);">01</div>
+        <div class="wf-body">
+          <h4>Create a Feature Branch</h4>
+          <p>Never commit directly to <code>main</code>. Create an isolated branch: <code>git checkout -b feat/user-auth</code>. This keeps main always deployable.</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(88,166,255,0.15);color:var(--gh-blue);border:2px solid var(--gh-blue);">02</div>
+        <div class="wf-body">
+          <h4>Make Changes & Commit Often</h4>
+          <p>Write code, then stage and commit frequently: <code>git add .</code> → <code>git commit -m "feat: add JWT validation"</code>. Small commits = easier reviews.</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(124,58,237,0.15);color:#a78bfa;border:2px solid #a78bfa;">03</div>
+        <div class="wf-body">
+          <h4>Push to GitHub</h4>
+          <p>Upload your branch: <code>git push -u origin feat/user-auth</code>. This backs up your work and makes it visible to teammates.</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(63,185,80,0.15);color:var(--gh-green);border:2px solid var(--gh-green);">04</div>
+        <div class="wf-body">
+          <h4>Open a Pull Request</h4>
+          <p>On GitHub, open a PR from your branch to <code>main</code>. Add description, screenshots, and request reviewers. This triggers CI/CD checks.</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(254,188,46,0.15);color:#fbbf24;border:2px solid #fbbf24;">05</div>
+        <div class="wf-body">
+          <h4>Code Review & Iteration</h4>
+          <p>Teammates leave comments. You respond with new commits. Push again — the PR updates automatically. Collaborate until it's approved.</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(240,80,51,0.15);color:var(--git-orange);border:2px solid var(--git-orange);">06</div>
+        <div class="wf-body">
+          <h4>Merge & Clean Up</h4>
+          <p>Merge the PR into <code>main</code>. Delete the feature branch on GitHub. Locally: <code>git checkout main</code> → <code>git pull</code> → <code>git branch -d feat/user-auth</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHEATSHEET -->
+<div class="divider"></div>
+<section id="cheatsheet">
+  <div class="section-label">Section 05</div>
+  <h2 class="section-title">Quick Cheatsheet</h2>
+  <p class="section-desc">Bookmark this. Print it. Tattoo it. Your daily Git reference at a glance.</p>
+  <div class="cheatsheet-grid">
+    <div class="cs-group">
+      <div class="cs-head">📁 Setup</div>
+      <div class="cs-row"><code>git config --global user.name "Name"</code><span>Set username</span></div>
+      <div class="cs-row"><code>git config --global user.email "e@mail"</code><span>Set email</span></div>
+      <div class="cs-row"><code>git config --list</code><span>View all config</span></div>
+      <div class="cs-row"><code>git init</code><span>New local repo</span></div>
+    </div>
+    <div class="cs-group">
+      <div class="cs-head">📸 Staging & Commits</div>
+      <div class="cs-row"><code>git add .</code><span>Stage all</span></div>
+      <div class="cs-row"><code>git add -p</code><span>Stage hunks</span></div>
+      <div class="cs-row"><code>git commit -m "msg"</code><span>Commit</span></div>
+      <div class="cs-row"><code>git commit --amend</code><span>Edit last commit</span></div>
+    </div>
+    <div class="cs-group">
+      <div class="cs-head">🌿 Branches</div>
+      <div class="cs-row"><code>git branch -a</code><span>List all branches</span></div>
+      <div class="cs-row"><code>git checkout -b &lt;name&gt;</code><span>Create + switch</span></div>
+      <div class="cs-row"><code>git merge --no-ff &lt;branch&gt;</code><span>Merge (keep history)</span></div>
+      <div class="cs-row"><code>git rebase main</code><span>Rebase onto main</span></div>
+    </div>
+    <div class="cs-group">
+      <div class="cs-head">☁️ Remote</div>
+      <div class="cs-row"><code>git push origin &lt;branch&gt;</code><span>Push branch</span></div>
+      <div class="cs-row"><code>git pull --rebase</code><span>Pull + rebase</span></div>
+      <div class="cs-row"><code>git fetch --all</code><span>Fetch all remotes</span></div>
+      <div class="cs-row"><code>git remote show origin</code><span>Remote details</span></div>
+    </div>
+    <div class="cs-group">
+      <div class="cs-head">🔍 Inspect & Compare</div>
+      <div class="cs-row"><code>git log --graph --all</code><span>Branch graph</span></div>
+      <div class="cs-row"><code>git diff HEAD</code><span>Changes vs last commit</span></div>
+      <div class="cs-row"><code>git blame &lt;file&gt;</code><span>Who changed what</span></div>
+      <div class="cs-row"><code>git show &lt;hash&gt;</code><span>Show commit details</span></div>
+    </div>
+    <div class="cs-group">
+      <div class="cs-head">🚑 Undo & Fix</div>
+      <div class="cs-row"><code>git restore &lt;file&gt;</code><span>Discard changes</span></div>
+      <div class="cs-row"><code>git revert &lt;hash&gt;</code><span>Safe undo (new commit)</span></div>
+      <div class="cs-row"><code>git reset --soft HEAD~1</code><span>Undo last commit</span></div>
+      <div class="cs-row"><code>git clean -fd</code><span>Remove untracked files</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Git & GitHub</div>
+  <p>Built with ❤️ for developers · Version control is not optional, it's essential.</p>
+  <p style="margin-top:0.75rem;">
+    <a href="https://git-scm.com/docs" target="_blank">Git Docs</a> &nbsp;·&nbsp;
+    <a href="https://docs.github.com" target="_blank">GitHub Docs</a> &nbsp;·&nbsp;
+    <a href="https://cli.github.com" target="_blank">GitHub CLI</a>
+  </p>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cursor.style.left = mx+'px'; cursor.style.top = my+'px'; });
+  (function animRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) *.12;
+    ring.style.left = rx+'px'; ring.style.top = ry+'px';
+    requestAnimationFrame(animRing);
+  })();
+  document.querySelectorAll('a,button,.cmd-code,.cmd-tab,.why-card').forEach(el => {
+    el.addEventListener('mouseenter', () => { cursor.style.transform='translate(-50%,-50%) scale(2)'; ring.style.transform='translate(-50%,-50%) scale(1.4)'; });
+    el.addEventListener('mouseleave', () => { cursor.style.transform='translate(-50%,-50%) scale(1)'; ring.style.transform='translate(-50%,-50%) scale(1)'; });
+  });
+
+  // Terminal animation
+  const sequences = [
+    { cmd: 'git init', out: ['Initialized empty Git repository in ~/project/.git/'] },
+    { cmd: 'git add .', out: [] },
+    { cmd: 'git commit -m "feat: initial commit"', out: ['[main (root-commit) a3f92c1] feat: initial commit','  3 files changed, 127 insertions(+)'] },
+    { cmd: 'git push origin main', out: ['Enumerating objects: 5, done.','Writing objects: 100% | 3 objects','Branch main set up to track origin/main.'] },
+    { cmd: 'git log --oneline', out: ['<span style="color:var(--gh-blue)">a3f92c1</span> feat: initial commit','<span style="color:var(--gh-blue)">8b2d401</span> chore: add .gitignore'] },
+  ];
+  let seqIdx = 0;
+  const termCmd = document.getElementById('termCmd');
+  const termOutput = document.getElementById('termOutput');
+  const termCursor = document.getElementById('termCursor');
+
+  function typeCommand(seq, cb) {
+    let i = 0;
+    termCmd.textContent = '';
+    termCursor.style.display = 'inline-block';
+    const interval = setInterval(() => {
+      termCmd.textContent += seq.cmd[i++];
+      if (i >= seq.cmd.length) { clearInterval(interval); setTimeout(cb, 500); }
+    }, 60);
+  }
+  function showOutput(seq, cb) {
+    termCursor.style.display = 'none';
+    let i = 0;
+    function next() {
+      if (i >= seq.out.length) { setTimeout(cb, 1200); return; }
+      const line = document.createElement('div');
+      line.className = 't-out';
+      line.innerHTML = seq.out[i++];
+      termOutput.appendChild(line);
+      setTimeout(next, 200);
+    }
+    next();
+  }
+  function runSeq() {
+    const seq = sequences[seqIdx % sequences.length];
+    termOutput.innerHTML = '';
+    typeCommand(seq, () => showOutput(seq, () => { seqIdx++; setTimeout(runSeq, 800); }));
+  }
+  setTimeout(runSeq, 800);
+
+  // Tabs
+  function showTab(name) {
+    document.querySelectorAll('.cmd-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.cmd-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Copy
+  const toast = document.getElementById('toast');
+  function copyCmd(el) {
+    const text = el.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    });
+  }
+
+  // Scroll animations
+  const wfSteps = document.querySelectorAll('.wf-step');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        const idx = [...wfSteps].indexOf(e.target);
+        setTimeout(() => e.target.classList.add('visible'), idx * 120);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  wfSteps.forEach(s => obs.observe(s));
+
+  // Card hover glow
+  document.querySelectorAll('.why-card,.cmd-card,.diff-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+      const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+      card.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(240,80,51,0.07), var(--surface) 60%)`;
+    });
+    card.addEventListener('mouseleave', () => { card.style.background = ''; });
+  });
+</script>
+</body>
+</html>
