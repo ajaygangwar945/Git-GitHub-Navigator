@@ -1,0 +1,106 @@
+================================================================================
+                         GIT & GITHUB NAVIGATOR
+                       Project Documentation Guide
+================================================================================
+
+This document details the architecture, design choices, core features, 
+containerization process, and CI/CD pipelines of the Git & GitHub Navigator 
+project.
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+Git & GitHub Navigator is an interactive, premium single-page web utility 
+designed to guide developers from version control basics to collaborative workflows. 
+The application acts as a comprehensive interactive cheatsheet, workflow guide, 
+and differences reference helper.
+
+Tech Stack:
+  - HTML5 (Semantic Structure)
+  - Vanilla CSS3 (Custom Styles, Glassmorphism, Micro-interactions)
+  - Vanilla JavaScript (Interactions, Terminal Emulator, Clipboard Utility)
+  - Docker (Containerization via Nginx)
+  - Jenkins (CI/CD Automations)
+
+--------------------------------------------------------------------------------
+2. FRONTEND FEATURES & DESIGN IMPLEMENTATION
+--------------------------------------------------------------------------------
+The interface has been meticulously designed to feel alive, modern, and highly 
+developer-centric.
+
+Key Design Elements:
+  - Harmonious Color Palette: Tailored HSL colors, featuring dark surface variants
+    (#0a0c10 to #1a1d24), Git Orange (#f05033), GitHub Purple (#7c3aed), GitHub 
+    Blue (#58a6ff), and GitHub Green (#3fb950).
+  - Modern Typography: "Space Mono" for terminal/code representations and "Syne" 
+    for bold, geometric layout headings.
+  - Interactive Card Glow: A custom mouse-move event listener computes the 
+    coordinates of the cursor relative to card elements (why-card, cmd-card, 
+    diff-card) and dynamically applies a subtle radial-gradient backdrop.
+  - Custom Cursor & Lag Ring: A custom CSS/JS cursor follows mouse coordinates 
+    instantly, while an outer ring lag-interpolates (lerps) with 12% damping to 
+    provide organic cursor movement. Cursor scale expands during hover events 
+    on interactive elements.
+  - Simulated Bash Terminal: A JavaScript typing animation that runs cyclic Git 
+    command examples (`git init` -> `git add .` -> `git commit` -> `git push` ->
+    `git log`) with styled outputs mimicking real terminal logs.
+  - Tabbed Commands Panel: Easy tab switching between categories: Basics, Branching, 
+    Remote, Advanced, and GitHub CLI.
+  - One-click Copy-to-Clipboard: Clicking any code block triggers the Clipboard API 
+    and slides in a custom toast notification confirming successful copying.
+  - Sequential Intersection Fade-ins: A native IntersectionObserver registers 
+    scroll-positions for the Git Workflow steps and fades them in sequentially.
+  - Fully Responsive Layout: Dynamic drawer navigation for tablets and mobile 
+    screens featuring a morphing hamburger menu icon (three lines transform 
+    smoothly to a close "X").
+
+--------------------------------------------------------------------------------
+3. CONTAINERIZATION (Dockerfile)
+--------------------------------------------------------------------------------
+To ensure portability and ease of hosting, the application is fully dockerized.
+
+Dockerfile Configuration:
+  - Uses the official lightweight 'nginx:alpine' base image for optimal speed and 
+    minimal build size.
+  - Copies the static `index.html` to Nginx's default serving directory 
+    (`/usr/share/nginx/html/index.html`).
+  - Exposes port 80 for standard web traffic.
+  - Automatically runs Nginx in the foreground to keep the container persistent.
+
+To build and run locally:
+  $ docker build -t git-github-navigator .
+  $ docker run -d -p 8080:80 git-github-navigator
+  Then navigate to http://localhost:8080 in your browser.
+
+--------------------------------------------------------------------------------
+4. CI/CD PIPELINE (Jenkinsfile)
+--------------------------------------------------------------------------------
+Continuous Integration and Deployment are configured via a declarative Jenkins 
+Pipeline that triggers automatically when changes are pushed.
+
+Pipeline Highlights:
+  - SCM Polling: Triggers builds automatically by checking source control modifications 
+    every minute (pollSCM('* * * * *')).
+  - Environment Management: Automatically sets Docker Hub image tag to reference 
+    Jenkins' internal `${env.BUILD_NUMBER}`.
+  - Docker Authentication: Securely logins to Docker Hub utilizing pre-configured 
+    'dockerhub-creds' credentials inside Jenkins.
+  - Build & Tag: Builds the container image under two distinct tags:
+      1) The specific build number (`ajaygangwar945/git-github-navigator:BUILD_NUMBER`)
+      2) The `latest` tag (`ajaygangwar945/git-github-navigator:latest`)
+  - Remote Publish: Automatically pushes both tagged images to the Docker Hub registry.
+  - Post-build Cleanup: Runs a `docker logout` command in the 'always' block to ensure 
+    no credentials remain cached on the build executor.
+
+--------------------------------------------------------------------------------
+5. PROJECT DIRECTORY STRUCTURE
+--------------------------------------------------------------------------------
+  Git-GitHub-Navigator/
+  ├── .dockerignore        # Excludes git files and local documentation from build context
+  ├── .gitignore           # Ignores system files, editor preferences, and logs
+  ├── Dockerfile           # Nginx-based container build config
+  ├── Jenkinsfile          # Jenkins declarative CI/CD pipeline script
+  ├── index.html           # Main code file (self-contained HTML, CSS & JavaScript)
+  ├── README.md            # Brief project introduction
+  └── documentation.txt    # This file - project architecture and making details
+================================================================================
