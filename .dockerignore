@@ -1,0 +1,34 @@
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Docker-related files
+Dockerfile
+.dockerignore
+
+# Ignore CI/CD config
+Jenkinsfile
+
+# Ignore IDE / Editor configs
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+Thumbs.db
+
+# Ignore Node files (in case npm/yarn are introduced later)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Ignore backups/history
+.history
+.env
+.env.local
+.env.*.local
