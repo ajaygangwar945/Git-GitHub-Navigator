@@ -2,6 +2,8 @@
   <img src="assets/banner.png" width="100%" height="200" alt="Git & GitHub Navigator Banner">
 </p>
 
+<h1 align="center">🐙 Git & GitHub Navigator</h1>
+
 <p align="center">
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5">
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3">
@@ -11,7 +13,7 @@
   <img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white" alt="Nginx">
 </p>
 
-# Git & GitHub Navigator
+
 
 An interactive, premium, dark-themed single-page guide to mastering version control, collaboration, and repository management.
 
@@ -24,6 +26,8 @@ The project is live and accessible online.
 <a href="https://ajaygangwar945.github.io/Git-GitHub-Navigator/">
     <img src="https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-007ec6?style=for-the-badge&logo=github&logoColor=white" alt="Live Demo" /></a>
 
+---
+
 ## 🚀 Live Demo & Visuals
 The page features a responsive web interface built using Vanilla HTML, CSS, and JS. It includes:
 * **Interactive Terminal Shell Emulator**: Runs common Git commands (`git init`, `git add`, `git commit`, `git push`, `git log`) in a simulated terminal environment.
@@ -31,6 +35,8 @@ The page features a responsive web interface built using Vanilla HTML, CSS, and 
 * **Dynamic Hover Glow Effects**: Background gradient shifts dynamically on cards corresponding to mouse movements.
 * **One-Click Copy Utility**: Easily copy essential Git commands with toast notifications.
 * **Responsive Layout**: Designed to look stunning on both desktop and mobile screens (featuring a morphing hamburger menu).
+
+---
 
 ## 🛠️ Tech Stack & Architecture
 * **Frontend**: HTML5, CSS3, ES6 JavaScript.
